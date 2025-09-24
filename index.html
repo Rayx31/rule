@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>La Ruleeeeeee🎰</title>
+<style>
+
+body {
+  font-family: Arial, sans-serif;
+  background: radial-gradient(circle at center, #003d0d, #015a1f);
+  color: #fff;
+  text-align: center;
+  padding: 20px;
+
+}
+h1 { margin-bottom: 10px; }
+.wallet { font-size: 20px; margin-bottom: 15px; }
+.ruleta-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 400px;
+  margin: 20px auto;
+  position: relative;
+}
+.ruleta {
+  width: 350px;
+  height: 350px;
+  border-radius: 50%;
+  position: relative;
+  box-shadow: 0 0 30px #000;
+}
+.ruleta .numero {
+  position: absolute;
+  width: 40px;
+  height: 20px;
+  text-align: center;
+  font-weight: bold;
+  font-size: 15px;
+  left: 45%;
+  top: 48%;
+  transform-origin: 0 0;
+}
+.bola {
+  width: 20px;
+  height: 20px;
+  background: white;
+  border-radius: 50%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) translateY(-175px);
+  box-shadow: 0 0 10px black;
+}
+.panel { margin-top: 20px; }
+input, select, button {
+  padding: 8px;
+  margin: 5px;
+  border-radius: 5px;
+  border: none;
+  font-size: 14px;
+}
+button { background: gold; cursor: pointer; font-weight: bold; transition: 0.3s; }
+button:hover { background: orange; }
+.resultado { margin-top: 20px; font-size: 18px; font-weight: bold; }
+.apuestas { margin-top: 10px; font-size: 14px; }
+</style>
+</head>
+<body>
+<h1>🎰 La Ruleeeeee 🎰</h1>
+<div class="wallet">Saldo: $<span id="saldo">100</span></div>
+<img src="loja.png" alt="Decoración" style="width:100px; height:100px; margin-left:20px;">
+
+
+<div class="ruleta-container">
+  <div class="ruleta" id="ruleta"></div>
+  <div class="bola" id="bola"></div>
+</div>
+
+<div class="panel">
+  <label for="tipo">Tipo:</label>
+  <select id="tipo">
+    <option value="numero">Número (0-36)</option>
+    <option value="color">Color (rojo/negro)</option>
+    <option value="rango">Rango (1-12, 13-24, 25-36, pares, impares)</option>
+  </select>
+  <input type="text" id="valor" placeholder="Ej: 7, rojo, pares">
+  <input type="number" id="apuesta" placeholder="Cantidad $" min="1">
+  <button onclick="agregarApuesta()">➕ Añadir</button>
+  <button onclick="jugar()">🎲 Girar</button>
+</div>
+
+<div class="apuestas" id="listaApuestas"></div>
+<div class="resultado" id="resultado"></div>
+
+<script>
+let saldo=100;
+let apuestas=[];
+const rojos=[1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
+const colores={};
+for(let i=0;i<=36;i++){colores[i]=i===0?'verde':rojos.includes(i)?'rojo':'negro';}
+const rangos={
+"1-12": Array.from({length:12},(_,i)=>i+1),
+"13-24": Array.from({length:12},(_,i)=>i+13),
+"25-36": Array.from({length:12},(_,i)=>i+25),
+"pares": Array.from({length:18},(_,i)=>(i+1)*2),
+"impares": Array.from({length:18},(_,i)=>(i*2)+1)
+};
+
+// Orden real de la ruleta europea
+const ordenRuleta = [
+  0,
+  32,15,19,4,21,2,25,17,34,6,
+  27,13,36,11,30,8,23,10,5,24,
+  16,33,1,20,14,31,9,22,18,29,
+  7,28,12,35,3,26
+];
+
+// Radio de los números
+const radioNumeros = 185;
+
+// Generar fondo dinámico
+function generarFondoRuleta() {
+  const coloresRuleta = [];
+  const angleStep = 360 / 37;
+
+  ordenRuleta.forEach((num, idx) => {
+    let color;
+    if (num === 0) {
+      color = "green";
+    } else if (rojos.includes(num)) {
+      color = "red";
+    } else {
+      color = "black";
+    }
+    coloresRuleta.push(`${color} ${idx * angleStep}deg ${(idx + 1) * angleStep}deg`);
+  });
+
+  document.getElementById("ruleta").style.background =
+    `conic-gradient(${coloresRuleta.join(",")})`;
+}
+generarFondoRuleta();
+
+// Colocar números
+const ruletaEl=document.getElementById("ruleta");
+const angleStep = 360/37;
+ordenRuleta.forEach((num, idx) => {
+  const numEl=document.createElement("div");
+  numEl.textContent=num;
+  numEl.classList.add("numero");
+
+  const angle = idx * angleStep + angleStep/2;
+  numEl.style.transform=`rotate(${angle}deg) translateY(-${radioNumeros}px) rotate(${-angle}deg)`;
+
+  numEl.style.color=colores[num]==='rojo'?'red':colores[num]==='negro'?'black':'green';
+  ruletaEl.appendChild(numEl);
+});
+
+function actualizarSaldo(){document.getElementById("saldo").textContent=saldo;}
+function mostrarApuestas(){document.getElementById("listaApuestas").innerHTML="<b>Apuestas:</b><br>"+apuestas.map(a=>`${a.tipo}: ${a.valor} ($${a.cantidad})`).join("<br>");}
+function agregarApuesta(){
+  const tipo=document.getElementById("tipo").value;
+  const valor=document.getElementById("valor").value.toLowerCase();
+  const cantidad=parseInt(document.getElementById("apuesta").value);
+  if(!cantidad||cantidad<=0){alert("Cantidad inválida");return;}
+  if(cantidad>saldo){alert("No tienes suficiente saldo");return;}
+  apuestas.push({tipo,valor,cantidad});
+  saldo-=cantidad;
+  actualizarSaldo();
+  mostrarApuestas();
+}
+
+function jugar() {
+  if (apuestas.length === 0) {
+    alert("Agrega al menos una apuesta");
+    return;
+  }
+
+  const resultado = Math.floor(Math.random() * 37); // número ganador
+  const colorResultado = colores[resultado];
+
+  const anglePerNumber = 360 / 37;
+  const indexResultado = ordenRuleta.indexOf(resultado);
+  const anguloFinal = indexResultado * anglePerNumber + (anglePerNumber / 2);
+
+  // Giro adicional rápido
+  const girosExtra = 360 * 25;
+  const totalRotation = girosExtra + anguloFinal;
+
+  const bolaEl = document.getElementById("bola");
+  bolaEl.style.transition = "transform 15s cubic-bezier(0.1, 0.8, 0.3, 1)";
+  bolaEl.style.transform = `translate(-50%, -50%) rotate(${totalRotation}deg) translateY(-175px) rotate(-${totalRotation}deg)`;
+
+  setTimeout(() => {
+    let mensaje = `🎲 Cayó en ${resultado} (${colorResultado})<br>`;
+    let ganancias = 0;
+
+    apuestas.forEach(a => {
+      if (a.tipo === 'numero' && parseInt(a.valor) === resultado) {
+        ganancias += a.cantidad * 35;
+        mensaje += `✅ Ganaste con el número ${a.valor}! +$${a.cantidad * 35}<br>`;
+      } else if (a.tipo === 'color' && a.valor === colorResultado) {
+        ganancias += a.cantidad * 2;
+        mensaje += `✅ Ganaste con el color ${a.valor}! +$${a.cantidad * 2}<br>`;
+      } else if (a.tipo === 'rango' && rangos[a.valor]?.includes(resultado)) {
+        ganancias += a.cantidad * 3;
+        mensaje += `✅ Ganaste con el rango ${a.valor}! +$${a.cantidad * 3}<br>`;
+      }
+    });
+
+    saldo += ganancias;
+    apuestas = [];
+    actualizarSaldo();
+    mostrarApuestas();
+    document.getElementById("resultado").innerHTML = mensaje || "❌ No ganaste esta vez";
+  }, 10000); // esperar 15 segundos
+}
+</script>
+</body>
+</html>
